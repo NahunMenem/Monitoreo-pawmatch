@@ -45,6 +45,56 @@ export interface VentaRecord {
   provincia: string;
 }
 
+export interface AdminPet {
+  id: string;
+  name: string;
+  type: "dog" | "cat";
+  breed: string;
+  sex: "male" | "female";
+  size: "small" | "medium" | "large";
+  vaccines_up_to_date: boolean;
+  sterilized: boolean;
+  is_active: boolean;
+  photos: string[];
+  created_at: string;
+  owner_id: string;
+  owner_name: string;
+  owner_email: string;
+}
+
+export interface AdminAdoption {
+  id: string;
+  name: string;
+  type: "dog" | "cat";
+  sex: "male" | "female" | null;
+  size: "small" | "medium" | "large";
+  age: string;
+  breed: string | null;
+  health_status: string;
+  location: string;
+  status: "available" | "reserved" | "adopted";
+  photos: string[];
+  published_at: string;
+  publisher_id: string;
+  publisher_name: string;
+  publisher_email: string;
+}
+
+export interface AdminLostPet {
+  id: string;
+  name: string;
+  type: "dog" | "cat";
+  sex: "male" | "female" | null;
+  location: string;
+  reward_amount: number | null;
+  status: "active" | "found";
+  photos: string[];
+  reported_at: string;
+  reporter_id: string;
+  reporter_name: string;
+  reporter_email: string;
+}
+
 export interface VentaFilters {
   dateFrom?: string;
   dateTo?: string;

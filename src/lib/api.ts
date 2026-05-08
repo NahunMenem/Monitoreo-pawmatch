@@ -1,4 +1,4 @@
-import { AdminStats, BackendUser, GrowthDataPoint, PatitasPack, VentaRecord, VentaFilters } from "./types";
+import { AdminStats, BackendUser, GrowthDataPoint, PatitasPack, VentaRecord, VentaFilters, AdminPet, AdminAdoption, AdminLostPet } from "./types";
 
 const BACKEND =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -91,6 +91,47 @@ export async function updatePatitasPack(
     method: "PUT",
     body: JSON.stringify(updates),
   });
+}
+
+// Pets
+export async function getAdminPets(
+  token: string,
+  params: { page?: number; limit?: number; search?: string; type?: string; sex?: string } = {}
+): Promise<{ total: number; page: number; pets: AdminPet[] }> {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.search) q.set("search", params.search);
+  if (params.type) q.set("type", params.type);
+  if (params.sex) q.set("sex", params.sex);
+  return apiFetch(`/admin/pets?${q}`, token);
+}
+
+// Adoptions
+export async function getAdminAdoptions(
+  token: string,
+  params: { page?: number; limit?: number; search?: string; status?: string; type?: string } = {}
+): Promise<{ total: number; page: number; adoptions: AdminAdoption[] }> {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.search) q.set("search", params.search);
+  if (params.status) q.set("status", params.status);
+  if (params.type) q.set("type", params.type);
+  return apiFetch(`/admin/adoptions?${q}`, token);
+}
+
+// Lost pets
+export async function getAdminLostPets(
+  token: string,
+  params: { page?: number; limit?: number; search?: string; status?: string } = {}
+): Promise<{ total: number; page: number; lost_pets: AdminLostPet[] }> {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.search) q.set("search", params.search);
+  if (params.status) q.set("status", params.status);
+  return apiFetch(`/admin/lost-pets?${q}`, token);
 }
 
 // When the backend exposes GET /admin/ventas?dateFrom=&dateTo=&provincia=&page=&limit=

@@ -47,6 +47,36 @@ const NAV = [
   },
 ];
 
+const NAV_MASCOTAS = [
+  {
+    href: "/dashboard/mascotas",
+    label: "Buscando Pareja",
+    icon: (
+      <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/dashboard/adopciones",
+    label: "En Adopción",
+    icon: (
+      <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/dashboard/perdidos",
+    label: "Mascotas Perdidas",
+    icon: (
+      <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+    ),
+  },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -92,6 +122,26 @@ export default function Sidebar() {
           );
         })}
 
+        <div className="px-3 pb-1 pt-6">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-white/22">Mascotas</p>
+        </div>
+        {NAV_MASCOTAS.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-[13px] font-bold transition-all ${
+                active
+                  ? "bg-gradient-to-r from-[#ff7a1a] to-[#ff5b45] text-white shadow-[0_18px_34px_rgba(255,107,53,0.28)]"
+                  : "text-white/55 hover:bg-white/6 hover:text-white/85"
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </Link>
+          );
+        })}
         <div className="px-3 pb-1 pt-6">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-white/22">Sistema</p>
         </div>
