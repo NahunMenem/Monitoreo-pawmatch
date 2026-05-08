@@ -35,6 +35,24 @@ export interface BackendUser {
   adoptions_count?: number;
 }
 
+export interface VentaRecord {
+  id: string;
+  fecha: string;
+  usuario: string;
+  email: string;
+  pack: "Starter" | "Popular" | "Pro";
+  monto: number;
+  provincia: string;
+}
+
+export interface VentaFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  provincia?: string;
+  page?: number;
+  limit?: number;
+}
+
 declare module "next-auth" {
   interface Session {
     backendToken?: string;

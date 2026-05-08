@@ -1,4 +1,4 @@
-import { AdminStats, BackendUser, GrowthDataPoint, PatitasPack } from "./types";
+import { AdminStats, BackendUser, GrowthDataPoint, PatitasPack, VentaRecord, VentaFilters } from "./types";
 
 const BACKEND =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -91,6 +91,21 @@ export async function updatePatitasPack(
     method: "PUT",
     body: JSON.stringify(updates),
   });
+}
+
+// When the backend exposes GET /admin/ventas?dateFrom=&dateTo=&provincia=&page=&limit=
+// replace MOCK_VENTAS in the page with: await getVentas(token, filters)
+export async function getVentas(
+  token: string,
+  filters: VentaFilters = {}
+): Promise<{ ventas: VentaRecord[]; total: number }> {
+  const params = new URLSearchParams();
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.provincia) params.set("provincia", filters.provincia);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
+  return apiFetch(`/admin/ventas?${params}`, token);
 }
 
 export async function getPublicPacks(): Promise<PatitasPack[]> {
