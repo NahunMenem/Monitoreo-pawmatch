@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   BarChart,
   Bar,
@@ -14,120 +15,17 @@ import {
   TooltipProps,
 } from "recharts";
 import { VentaRecord } from "@/lib/types";
+import { getVentas } from "@/lib/api";
+import { ALL_PROVINCES, PROVINCIAS_ARG } from "@/lib/provinces";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const PROVINCIAS_ARG = [
-  "Todas las provincias",
-  "Buenos Aires",
-  "CABA",
-  "Catamarca",
-  "Chaco",
-  "Chubut",
-  "Córdoba",
-  "Corrientes",
-  "Entre Ríos",
-  "Formosa",
-  "Jujuy",
-  "La Pampa",
-  "La Rioja",
-  "Mendoza",
-  "Misiones",
-  "Neuquén",
-  "Río Negro",
-  "Salta",
-  "San Juan",
-  "San Luis",
-  "Santa Cruz",
-  "Santa Fe",
-  "Santiago del Estero",
-  "Tierra del Fuego",
-  "Tucumán",
-];
 
 const PACK_BADGE: Record<string, string> = {
   Starter: "bg-emerald-50 text-emerald-700 border-emerald-200",
   Popular: "bg-blue-50 text-blue-700 border-blue-200",
   Pro: "bg-violet-50 text-violet-700 border-violet-200",
 };
-
-// ── Mock data — replace with: await getVentas(token, filters) when backend endpoint is ready ──
-const MOCK_VENTAS: VentaRecord[] = [
-  { id: "v001", fecha: "2026-01-03", usuario: "Lucas García", email: "lucas.g@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v002", fecha: "2026-01-05", usuario: "María González", email: "maria.g@mail.com", pack: "Starter", monto: 2000, provincia: "CABA" },
-  { id: "v003", fecha: "2026-01-07", usuario: "Juan Pérez", email: "juan.p@mail.com", pack: "Pro", monto: 9000, provincia: "Córdoba" },
-  { id: "v004", fecha: "2026-01-09", usuario: "Ana Rodríguez", email: "ana.r@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v005", fecha: "2026-01-11", usuario: "Carlos López", email: "carlos.l@mail.com", pack: "Starter", monto: 2000, provincia: "Santa Fe" },
-  { id: "v006", fecha: "2026-01-13", usuario: "Valentina Torres", email: "val.t@mail.com", pack: "Popular", monto: 5000, provincia: "Mendoza" },
-  { id: "v007", fecha: "2026-01-15", usuario: "Marcos Fernández", email: "marcos.f@mail.com", pack: "Pro", monto: 9000, provincia: "CABA" },
-  { id: "v008", fecha: "2026-01-17", usuario: "Sofía Martínez", email: "sofia.m@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v009", fecha: "2026-01-19", usuario: "Diego Díaz", email: "diego.d@mail.com", pack: "Starter", monto: 2000, provincia: "Tucumán" },
-  { id: "v010", fecha: "2026-01-21", usuario: "Lucía Sánchez", email: "lucia.s@mail.com", pack: "Popular", monto: 5000, provincia: "Córdoba" },
-  { id: "v011", fecha: "2026-01-23", usuario: "Agustín Romero", email: "agus.r@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v012", fecha: "2026-01-25", usuario: "Camila Herrera", email: "cami.h@mail.com", pack: "Pro", monto: 9000, provincia: "Mendoza" },
-  { id: "v013", fecha: "2026-01-27", usuario: "Nicolás Álvarez", email: "nico.a@mail.com", pack: "Popular", monto: 5000, provincia: "Santa Fe" },
-  { id: "v014", fecha: "2026-01-29", usuario: "Florencia Ruiz", email: "flor.r@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v015", fecha: "2026-02-02", usuario: "Tomás Morales", email: "tomas.m@mail.com", pack: "Popular", monto: 5000, provincia: "CABA" },
-  { id: "v016", fecha: "2026-02-04", usuario: "Martina Gutiérrez", email: "marti.g@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v017", fecha: "2026-02-06", usuario: "Sebastián Castro", email: "seba.c@mail.com", pack: "Pro", monto: 9000, provincia: "Córdoba" },
-  { id: "v018", fecha: "2026-02-08", usuario: "Isabella Ortiz", email: "isa.o@mail.com", pack: "Popular", monto: 5000, provincia: "Salta" },
-  { id: "v019", fecha: "2026-02-10", usuario: "Rodrigo Flores", email: "rodri.f@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v020", fecha: "2026-02-12", usuario: "Emilia Vargas", email: "emi.v@mail.com", pack: "Starter", monto: 2000, provincia: "Mendoza" },
-  { id: "v021", fecha: "2026-02-14", usuario: "Ignacio Ramos", email: "igna.r@mail.com", pack: "Popular", monto: 5000, provincia: "CABA" },
-  { id: "v022", fecha: "2026-02-16", usuario: "Valentín Medina", email: "val.m@mail.com", pack: "Starter", monto: 2000, provincia: "Entre Ríos" },
-  { id: "v023", fecha: "2026-02-18", usuario: "Paula Acosta", email: "pau.a@mail.com", pack: "Pro", monto: 9000, provincia: "Buenos Aires" },
-  { id: "v024", fecha: "2026-02-20", usuario: "Ramiro Rojas", email: "rami.r@mail.com", pack: "Popular", monto: 5000, provincia: "Santa Fe" },
-  { id: "v025", fecha: "2026-02-22", usuario: "Daniela Vega", email: "dani.v@mail.com", pack: "Starter", monto: 2000, provincia: "Tucumán" },
-  { id: "v026", fecha: "2026-02-24", usuario: "Manuel Suárez", email: "manu.s@mail.com", pack: "Popular", monto: 5000, provincia: "Córdoba" },
-  { id: "v027", fecha: "2026-02-26", usuario: "Carolina Molina", email: "caro.m@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v028", fecha: "2026-02-28", usuario: "Santiago Moreno", email: "santi.m@mail.com", pack: "Pro", monto: 9000, provincia: "CABA" },
-  { id: "v029", fecha: "2026-03-02", usuario: "Micaela Silva", email: "mica.s@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v030", fecha: "2026-03-04", usuario: "Hernán Aguilar", email: "hernan.a@mail.com", pack: "Starter", monto: 2000, provincia: "Misiones" },
-  { id: "v031", fecha: "2026-03-06", usuario: "Julieta Contreras", email: "juli.c@mail.com", pack: "Popular", monto: 5000, provincia: "Córdoba" },
-  { id: "v032", fecha: "2026-03-08", usuario: "Facundo Guerrero", email: "facu.g@mail.com", pack: "Pro", monto: 9000, provincia: "Buenos Aires" },
-  { id: "v033", fecha: "2026-03-10", usuario: "Natalia Reyes", email: "nati.r@mail.com", pack: "Popular", monto: 5000, provincia: "CABA" },
-  { id: "v034", fecha: "2026-03-12", usuario: "Ezequiel Navarro", email: "eze.n@mail.com", pack: "Starter", monto: 2000, provincia: "Santa Fe" },
-  { id: "v035", fecha: "2026-03-14", usuario: "Agustina Cortés", email: "agusti.c@mail.com", pack: "Popular", monto: 5000, provincia: "Mendoza" },
-  { id: "v036", fecha: "2026-03-16", usuario: "Federico Jiménez", email: "fede.j@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v037", fecha: "2026-03-18", usuario: "Silvana Torres", email: "silv.t@mail.com", pack: "Pro", monto: 9000, provincia: "Neuquén" },
-  { id: "v038", fecha: "2026-03-20", usuario: "Maximiliano Ríos", email: "maxi.r@mail.com", pack: "Popular", monto: 5000, provincia: "Tucumán" },
-  { id: "v039", fecha: "2026-03-22", usuario: "Belén Cabrera", email: "belen.c@mail.com", pack: "Starter", monto: 2000, provincia: "CABA" },
-  { id: "v040", fecha: "2026-03-24", usuario: "Leandro Fuentes", email: "lean.f@mail.com", pack: "Popular", monto: 5000, provincia: "Córdoba" },
-  { id: "v041", fecha: "2026-03-26", usuario: "Cristina Campos", email: "cris.c@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v042", fecha: "2026-03-28", usuario: "Pablo Espinoza", email: "pablo.e@mail.com", pack: "Pro", monto: 9000, provincia: "Santa Fe" },
-  { id: "v043", fecha: "2026-03-30", usuario: "Adriana Carrillo", email: "adri.c@mail.com", pack: "Popular", monto: 5000, provincia: "Entre Ríos" },
-  { id: "v044", fecha: "2026-04-01", usuario: "Gustavo Pedraza", email: "gus.p@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v045", fecha: "2026-04-03", usuario: "Lorena Delgado", email: "lore.d@mail.com", pack: "Popular", monto: 5000, provincia: "CABA" },
-  { id: "v046", fecha: "2026-04-05", usuario: "Andrés Paredes", email: "andres.p@mail.com", pack: "Pro", monto: 9000, provincia: "Córdoba" },
-  { id: "v047", fecha: "2026-04-07", usuario: "Rosa Mendoza", email: "rosa.m@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v048", fecha: "2026-04-09", usuario: "Roberto Gallardo", email: "rober.g@mail.com", pack: "Starter", monto: 2000, provincia: "Chaco" },
-  { id: "v049", fecha: "2026-04-11", usuario: "Patricia Salinas", email: "patri.s@mail.com", pack: "Popular", monto: 5000, provincia: "Mendoza" },
-  { id: "v050", fecha: "2026-04-13", usuario: "Hugo Castillo", email: "hugo.c@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v051", fecha: "2026-04-15", usuario: "Viviana Lara", email: "vivi.l@mail.com", pack: "Pro", monto: 9000, provincia: "CABA" },
-  { id: "v052", fecha: "2026-04-17", usuario: "Osvaldo Serrano", email: "osval.s@mail.com", pack: "Popular", monto: 5000, provincia: "Santa Fe" },
-  { id: "v053", fecha: "2026-04-19", usuario: "Mónica Ávila", email: "moni.a@mail.com", pack: "Starter", monto: 2000, provincia: "Tucumán" },
-  { id: "v054", fecha: "2026-04-21", usuario: "Claudio Ibáñez", email: "clau.i@mail.com", pack: "Popular", monto: 5000, provincia: "Córdoba" },
-  { id: "v055", fecha: "2026-04-23", usuario: "Noemí Valdez", email: "noemi.v@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v056", fecha: "2026-04-25", usuario: "Walter Montes", email: "walter.m@mail.com", pack: "Pro", monto: 9000, provincia: "Río Negro" },
-  { id: "v057", fecha: "2026-04-27", usuario: "Elena Carvajal", email: "elena.c@mail.com", pack: "Popular", monto: 5000, provincia: "CABA" },
-  { id: "v058", fecha: "2026-04-29", usuario: "Rubén Peña", email: "ruben.p@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v059", fecha: "2026-05-01", usuario: "Alicia Mora", email: "alicia.m@mail.com", pack: "Popular", monto: 5000, provincia: "Córdoba" },
-  { id: "v060", fecha: "2026-05-02", usuario: "Enzo Portillo", email: "enzo.p@mail.com", pack: "Starter", monto: 2000, provincia: "Buenos Aires" },
-  { id: "v061", fecha: "2026-05-03", usuario: "Laura Cárdenas", email: "lau.c@mail.com", pack: "Pro", monto: 9000, provincia: "CABA" },
-  { id: "v062", fecha: "2026-05-04", usuario: "Axel Villanueva", email: "axel.v@mail.com", pack: "Popular", monto: 5000, provincia: "Santa Fe" },
-  { id: "v063", fecha: "2026-05-05", usuario: "Verónica Escobar", email: "vero.e@mail.com", pack: "Starter", monto: 2000, provincia: "Mendoza" },
-  { id: "v064", fecha: "2026-05-06", usuario: "Mauricio Hurtado", email: "mauri.h@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v065", fecha: "2026-05-07", usuario: "Adrián Quintero", email: "adri.q@mail.com", pack: "Pro", monto: 9000, provincia: "Tucumán" },
-  { id: "v066", fecha: "2026-05-07", usuario: "Natalia Rivas", email: "nati.riv@mail.com", pack: "Popular", monto: 5000, provincia: "CABA" },
-  { id: "v067", fecha: "2026-05-08", usuario: "Gabriel Soto", email: "gabi.s@mail.com", pack: "Starter", monto: 2000, provincia: "Entre Ríos" },
-  { id: "v068", fecha: "2026-05-08", usuario: "Marcela Figueroa", email: "marce.f@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-  { id: "v069", fecha: "2026-05-08", usuario: "Arturo Zamora", email: "artu.z@mail.com", pack: "Starter", monto: 2000, provincia: "Córdoba" },
-  { id: "v070", fecha: "2026-05-08", usuario: "Beatriz Montoya", email: "bea.m@mail.com", pack: "Popular", monto: 5000, provincia: "Santa Fe" },
-  { id: "v071", fecha: "2026-05-08", usuario: "Ramón Ibarra", email: "ramon.i@mail.com", pack: "Pro", monto: 9000, provincia: "Buenos Aires" },
-  { id: "v072", fecha: "2026-05-08", usuario: "Cecilia Bravo", email: "ceci.b@mail.com", pack: "Starter", monto: 2000, provincia: "Corrientes" },
-  { id: "v073", fecha: "2026-05-08", usuario: "Óscar Fuentes", email: "oscar.f@mail.com", pack: "Popular", monto: 5000, provincia: "Jujuy" },
-  { id: "v074", fecha: "2026-05-08", usuario: "Inés Salamanca", email: "ines.s@mail.com", pack: "Starter", monto: 2000, provincia: "San Juan" },
-  { id: "v075", fecha: "2026-05-08", usuario: "Lorenzo Ponce", email: "loren.p@mail.com", pack: "Popular", monto: 5000, provincia: "Buenos Aires" },
-];
+const DEFAULT_PACK_BADGE = "bg-orange-50 text-orange-700 border-orange-200";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function formatARS(n: number) {
@@ -192,21 +90,42 @@ function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) 
 const PAGE_SIZE = 15;
 
 export default function VentasPage() {
+  const { data: session } = useSession();
+  const token = (session as any)?.backendToken ?? "";
+
+  const [ventas, setVentas] = useState<VentaRecord[]>([]);
+  const [loading, setLoading] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("")
-  const [provincia, setProvincia] = useState("Todas las provincias");
+  const [dateTo, setDateTo] = useState("");
+  const [provincia, setProvincia] = useState(ALL_PROVINCES);
   const [tablePage, setTablePage] = useState(1);
 
-  const hasFilters = !!(dateFrom || dateTo || provincia !== "Todas las provincias");
+  const hasFilters = !!(dateFrom || dateTo || provincia !== ALL_PROVINCES);
 
-  const filtered = useMemo(() => {
-    return MOCK_VENTAS.filter((v) => {
-      if (provincia !== "Todas las provincias" && v.provincia !== provincia) return false;
-      if (dateFrom && v.fecha < dateFrom) return false;
-      if (dateTo && v.fecha > dateTo) return false;
-      return true;
-    }).sort((a, b) => b.fecha.localeCompare(a.fecha));
-  }, [dateFrom, dateTo, provincia]);
+  const fetchVentas = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await getVentas(token, {
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        provincia: provincia !== ALL_PROVINCES ? provincia : undefined,
+        page: 1,
+        limit: 500,
+      });
+      setVentas(res.ventas.sort((a, b) => b.fecha.localeCompare(a.fecha)));
+    } catch {
+      setVentas([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, dateFrom, dateTo, provincia]);
+
+  useEffect(() => {
+    fetchVentas();
+  }, [fetchVentas]);
+
+  const filtered = ventas;
 
   // KPIs
   const totalRevenue = useMemo(() => filtered.reduce((s, v) => s + v.monto, 0), [filtered]);
@@ -219,11 +138,11 @@ export default function VentasPage() {
   }, [filtered]);
 
   // Bar chart — provinces when global, pack breakdown when province is filtered
-  const isProvinceFiltered = provincia !== "Todas las provincias";
+  const isProvinceFiltered = provincia !== ALL_PROVINCES;
   const barData = useMemo(() => {
     if (isProvinceFiltered) {
-      const map: Record<string, number> = { Starter: 0, Popular: 0, Pro: 0 };
-      filtered.forEach((v) => { map[v.pack] += v.monto; });
+      const map: Record<string, number> = {};
+      filtered.forEach((v) => { map[v.pack] = (map[v.pack] || 0) + v.monto; });
       return Object.entries(map).map(([name, total]) => ({ name, total }));
     }
     const map: Record<string, number> = {};
@@ -256,7 +175,7 @@ export default function VentasPage() {
   const clearFilters = () => {
     setDateFrom("");
     setDateTo("");
-    setProvincia("Todas las provincias");
+    setProvincia(ALL_PROVINCES);
     setTablePage(1);
   };
 
@@ -475,7 +394,11 @@ export default function VentasPage() {
           </p>
         </div>
 
-        {paginatedRows.length === 0 ? (
+        {loading ? (
+          <div className="flex h-32 items-center justify-center text-sm font-bold text-slate-400">
+            Cargando ventas reales...
+          </div>
+        ) : paginatedRows.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-slate-400">
             <svg className="h-10 w-10 text-slate-200" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -504,7 +427,7 @@ export default function VentasPage() {
                     </td>
                     <td className="hidden px-6 py-3.5 text-[12px] text-slate-400 md:table-cell">{v.email}</td>
                     <td className="px-6 py-3.5">
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${PACK_BADGE[v.pack]}`}>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${PACK_BADGE[v.pack] || DEFAULT_PACK_BADGE}`}>
                         {v.pack}
                       </span>
                     </td>
@@ -566,3 +489,5 @@ export default function VentasPage() {
     </div>
   );
 }
+
+

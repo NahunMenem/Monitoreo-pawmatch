@@ -40,7 +40,7 @@ export interface VentaRecord {
   fecha: string;
   usuario: string;
   email: string;
-  pack: "Starter" | "Popular" | "Pro";
+  pack: string;
   monto: number;
   provincia: string;
 }
@@ -60,6 +60,7 @@ export interface AdminPet {
   owner_id: string;
   owner_name: string;
   owner_email: string;
+  owner_location?: string | null;
 }
 
 export interface AdminAdoption {

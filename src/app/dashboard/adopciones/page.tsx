@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { getAdminAdoptions } from "@/lib/api";
 import { AdminAdoption } from "@/lib/types";
+import { ALL_PROVINCES, PROVINCIAS_ARG } from "@/lib/provinces";
 
 const LIMIT = 20;
 
@@ -48,17 +49,25 @@ export default function AdopcionesPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [type, setType] = useState("");
+  const [provincia, setProvincia] = useState(ALL_PROVINCES);
   const [loading, setLoading] = useState(false);
 
   const fetch = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await getAdminAdoptions(token, { page, limit: LIMIT, search: search || undefined, status: status || undefined, type: type || undefined });
+      const res = await getAdminAdoptions(token, {
+        page,
+        limit: LIMIT,
+        search: search || undefined,
+        status: status || undefined,
+        type: type || undefined,
+        provincia: provincia !== ALL_PROVINCES ? provincia : undefined,
+      });
       setAdoptions(res.adoptions);
       setTotal(res.total);
     } catch { /* silent */ } finally { setLoading(false); }
-  }, [token, page, search, status, type]);
+  }, [token, page, search, status, type, provincia]);
 
   useEffect(() => { fetch(); }, [fetch]);
   const resetPage = () => setPage(1);
@@ -119,8 +128,14 @@ export default function AdopcionesPage() {
               <option value="cat">Gatos</option>
             </select>
           </div>
-          {(search || status || type) && (
-            <button onClick={() => { setSearch(""); setStatus(""); setType(""); resetPage(); }}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Provincia</label>
+            <select value={provincia} onChange={e => { setProvincia(e.target.value); resetPage(); }} className="input h-10 min-w-[190px] cursor-pointer text-sm">
+              {PROVINCIAS_ARG.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          {(search || status || type || provincia !== ALL_PROVINCES) && (
+            <button onClick={() => { setSearch(""); setStatus(""); setType(""); setProvincia(ALL_PROVINCES); resetPage(); }}
               className="flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-[12px] font-bold text-slate-500 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 transition-all">
               <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
